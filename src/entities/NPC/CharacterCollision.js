@@ -101,6 +101,18 @@ export default class CharacterCollision extends Component{
     }
 
     Update(t){
+        if (this.controller && this.controller.health <= 0) {
+            if (!this.triggersRemoved) {
+                Object.keys(this.collisions).forEach(key=>{
+                    const collision = this.collisions[key];
+                    this.world.removeCollisionObject(collision.object);
+                });
+                this.triggersRemoved = true;
+                console.log("[Physics] Mutant bone triggers cleaned up.");
+            }
+            return;
+        }
+
         Object.keys(this.collisions).forEach(key=>{
             const collision = this.collisions[key];
             

@@ -141,14 +141,45 @@ class FPSGameApp{
       p.then(()=> {    
         d++;
         progress_cb( (d / proms.length) * 100 );
+      }).catch(err => {
+        console.error("PromiseProgress error:", err);
+        const debugDiv = document.getElementById('debug');
+        if (debugDiv) debugDiv.innerHTML += `<div style="color:red">Promise failed: ${err.message || err}</div>`;
       });
     }
     return Promise.all(proms);
   }
 
   AddAsset(asset, loader, name){
+    console.log(`[Loader] Starting to load: ${name} from ${asset}`);
+    const debugDiv = document.getElementById('debug');
+    if (debugDiv) {
+      debugDiv.innerHTML += `<div id="load_${name}">Loading: ${name}...</div>`;
+    }
     return loader.loadAsync(asset).then( result =>{
+      console.log(`[Loader] Finished loading: ${name}`);
+      if (debugDiv) {
+        const item = document.getElementById(`load_${name}`);
+        if (item) {
+          item.style.color = 'lightgreen';
+          item.innerText = `Loaded: ${name}`;
+        } else {
+          debugDiv.innerHTML += `<div style="color:lightgreen">Loaded: ${name}</div>`;
+        }
+      }
       this.assets[name] = result;
+    }).catch(err => {
+      console.error(`[Loader] Error loading ${name}:`, err);
+      if (debugDiv) {
+        const item = document.getElementById(`load_${name}`);
+        if (item) {
+          item.style.color = 'red';
+          item.innerText = `Failed ${name}: ${err.message || err}`;
+        } else {
+          debugDiv.innerHTML += `<div style="color:red">Failed ${name}: ${err.message || err}</div>`;
+        }
+      }
+      throw err;
     });
   }
 
@@ -309,6 +340,13 @@ class FPSGameApp{
   }
 
   StartGame = ()=>{
+    if (!this.assets || !this.assets['level']) {
+      console.warn("[Game] Assets are still loading. Cannot start game yet.");
+      return;
+    }
+    const debugDiv = document.getElementById('debug');
+    if (debugDiv) debugDiv.style.display = 'none';
+
     window.cancelAnimationFrame(this.animFrameId);
     Input.ClearEventListners();
 

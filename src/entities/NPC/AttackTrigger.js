@@ -34,6 +34,16 @@ export default class AttackTrigger extends Component{
     }
     
     Update(t){
+        const controller = this.GetComponent('CharacterController');
+        if (controller && controller.health <= 0) {
+            if (this.triggerRemoved !== true) {
+                this.physicsWorld.removeCollisionObject(this.ghostObj);
+                this.triggerRemoved = true;
+                console.log("[Physics] Mutant attack trigger cleaned up.");
+            }
+            return;
+        }
+
         const entityPos = this.parent.position;
         const entityRot = this.parent.rotation;
         const transform = this.ghostObj.getWorldTransform();

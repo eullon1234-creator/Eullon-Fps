@@ -10,9 +10,9 @@
     "webpack"
   ],
   "scripts": {
-    "start": "npx cross-env NODE_OPTIONS=--openssl-legacy-provider webpack serve",
-    "prebuild": "npx rimraf ./build && npx mkdirp ./build",
-    "build": "npx cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --mode production"
+    "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack serve",
+    "prebuild": "rimraf ./build && mkdirp ./build",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --mode production"
   },
   "dependencies": {
     "@types/ammo.js": "github:osman-turan/ammo.js-typings",
@@ -25,9 +25,12 @@
     "@babel/core": "^7.12.10",
     "@babel/preset-env": "^7.12.11",
     "babel-loader": "^8.2.2",
+    "cross-env": "^10.1.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^4.5.1",
+    "mkdirp": "^3.0.1",
     "raw-loader": "^4.0.2",
+    "rimraf": "^6.1.3",
     "webpack": "^5.14.0",
     "webpack-dev-server": "^3.11.2"
   },

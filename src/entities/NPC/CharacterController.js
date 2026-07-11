@@ -29,6 +29,11 @@ export default class CharacterController extends Component{
 
         this.canMove = true;
         this.health = 100;
+
+        this.dodgeTime = 0.0;
+        this.dodgeDir = 0;
+        this.dodgeCooldown = 0.0;
+        this.speedMultiplier = 1.0;
     }
 
     SetAnim(name, clip){
@@ -47,6 +52,9 @@ export default class CharacterController extends Component{
         this.player = this.FindEntity("Player");
 
         this.parent.RegisterEventHandler(this.TakeHit, 'hit');
+
+        // Register gunshot hearing handler
+        this.player.RegisterEventHandler(this.HearGunshot, 'ak47_shot');
 
         const scene = this.model;
 
@@ -73,6 +81,21 @@ export default class CharacterController extends Component{
 
         this.scene.add(scene);
         this.stateMachine.SetState('idle');
+
+        // Create health bar 3D sprite floating above head
+        this.healthCanvas = document.createElement('canvas');
+        this.healthCanvas.width = 128;
+        this.healthCanvas.height = 16;
+        this.healthTexture = new THREE.CanvasTexture(this.healthCanvas);
+        const healthMaterial = new THREE.SpriteMaterial({ 
+            map: this.healthTexture, 
+            depthTest: true, 
+            depthWrite: false 
+        });
+        this.healthSprite = new THREE.Sprite(healthMaterial);
+        this.healthSprite.scale.set(1.2, 0.15, 1);
+        this.scene.add(this.healthSprite);
+        this.UpdateHealthBar();
     }
 
     UpdateDirection(){
@@ -160,14 +183,56 @@ export default class CharacterController extends Component{
 
     TakeHit = msg => {
         this.health = Math.max(0, this.health - msg.amount);
+        this.UpdateHealthBar();
 
         if(this.health == 0){
             this.stateMachine.SetState('dead');
+            if (this.healthSprite) {
+                this.scene.remove(this.healthSprite);
+            }
         }else{
             const stateName = this.stateMachine.currentState.Name;
             if(stateName == 'idle' || stateName == 'patrol'){
                 this.stateMachine.SetState('chase');
             }
+
+            // 40% chance to dodge when hit, only if cooldown is finished
+            if (this.dodgeCooldown <= 0 && Math.random() < 0.40 && (stateName === 'chase' || stateName === 'attack' || stateName === 'idle' || stateName === 'patrol')) {
+                this.dodgeTime = 0.4; // Dodge slide duration (0.4s)
+                this.dodgeDir = Math.random() < 0.5 ? 1 : -1;
+                this.dodgeCooldown = 2.5; // Cooldown of 2.5 seconds before next dodge
+            }
+        }
+    }
+
+    UpdateHealthBar(){
+        if (!this.healthCanvas) return;
+        const ctx = this.healthCanvas.getContext('2d');
+        ctx.clearRect(0, 0, 128, 16);
+        
+        // Red background
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(0, 0, 128, 16);
+        
+        // Green foreground
+        ctx.fillStyle = '#00ff00';
+        const healthWidth = (this.health / 100) * 128;
+        ctx.fillRect(0, 0, healthWidth, 16);
+        
+        // White border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, 0, 128, 16);
+        
+        this.healthTexture.needsUpdate = true;
+    }
+
+    HearGunshot = (msg) => {
+        if (this.health <= 0) return;
+        const stateName = this.stateMachine.currentState.Name;
+        if (stateName === 'idle' || stateName === 'patrol') {
+            console.log(`[AI] ${this.parent.name} heard gunshot! Transitioning to chase.`);
+            this.stateMachine.SetState('chase');
         }
     }
 
@@ -200,12 +265,14 @@ export default class CharacterController extends Component{
     ApplyRootMotion(){
         if(this.canMove){
             const vel = this.rootBone.position.clone();
-            vel.sub(this.lastPos).multiplyScalar(0.01);
+            // Scale velocity by speedMultiplier to run faster
+            vel.sub(this.lastPos).multiplyScalar(0.01 * (this.speedMultiplier || 1.0));
             vel.y = 0;
 
             vel.applyQuaternion(this.model.quaternion);
 
-            if(vel.lengthSq() < 0.1 * 0.1){
+            const limit = 0.1 * (this.speedMultiplier || 1.0);
+            if(vel.lengthSq() < limit * limit){
                 this.model.position.add(vel);
             }
         }
@@ -220,11 +287,30 @@ export default class CharacterController extends Component{
         this.mixer && this.mixer.update(t);
         this.ApplyRootMotion();
 
+        // Decrement dodge cooldown
+        if (this.dodgeCooldown > 0) {
+            this.dodgeCooldown -= t;
+        }
+
+        // Apply dodge movement (slower speed of 1.8 for smoother slide)
+        if (this.dodgeTime > 0 && this.health > 0) {
+            const dodgeSpeed = 1.8;
+            const rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(this.model.quaternion);
+            this.model.position.addScaledVector(rightVec, this.dodgeDir * dodgeSpeed * t);
+            this.dodgeTime -= t;
+        }
+
         this.UpdateDirection();
         this.MoveAlongPath(t);
         this.stateMachine.Update(t);
 
         this.parent.SetRotation(this.model.quaternion);
         this.parent.SetPosition(this.model.position);
+
+        // Update health sprite position
+        if (this.health > 0 && this.healthSprite) {
+            this.healthSprite.position.copy(this.model.position);
+            this.healthSprite.position.y += 2.1;
+        }
     }
 }

@@ -71,6 +71,7 @@ class PatrolState extends State{
 
     Enter(prevState){
         this.parent.proxy.canMove = true;
+        this.parent.proxy.speedMultiplier = 1.0;
         const action = this.Animation.action;
 
         if(prevState){
@@ -131,6 +132,19 @@ class ChaseState extends State{
         if(this.updateTimer <= 0.0){
             this.parent.proxy.NavigateToPlayer();
             this.updateTimer = this.updateFrequency;
+        }
+
+        // Charge/Rage mode: speed up when close to player
+        const playerPos = this.parent.proxy.player.Position;
+        const modelPos = this.parent.proxy.model.position;
+        const dist = playerPos.distanceTo(modelPos);
+        const action = this.Animation.action;
+        if (dist < 8.0) {
+            action.timeScale = 2.0; // Rage charge!
+            this.parent.proxy.speedMultiplier = 2.8; // Move 2.8x faster
+        } else {
+            action.timeScale = 1.6; // Normal run
+            this.parent.proxy.speedMultiplier = 1.9; // Move 1.9x faster
         }
 
         if(this.parent.proxy.IsCloseToPlayer){
