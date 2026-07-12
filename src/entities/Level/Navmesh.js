@@ -21,11 +21,29 @@ export default class Navmesh extends Component{
         this.mesh.traverse( ( node ) => {
             if(node.isMesh){ 
                 node.updateMatrixWorld();
-                const geom = node.geometry.clone();
+                let geom = node.geometry.clone();
                 geom.applyMatrix4(node.matrixWorld);
-                geometries.push(geom);
+                
+                // Converte para não-indexado e limpa atributos desnecessários
+                geom = geom.toNonIndexed();
+                const cleanGeom = new THREE.BufferGeometry();
+                cleanGeom.setAttribute('position', geom.getAttribute('position'));
+                geometries.push(cleanGeom);
             }
         });
+
+        // Adiciona as geometrias extras geradas pelo LevelSetup
+        const levelSetup = this.parent.GetComponent('LevelSetup');
+        if (levelSetup && levelSetup.extraGeometries) {
+            levelSetup.extraGeometries.forEach(geom => {
+                let tempGeom = geom.clone();
+                // Converte para não-indexado e mantém apenas posição
+                tempGeom = tempGeom.toNonIndexed();
+                const cleanGeom = new THREE.BufferGeometry();
+                cleanGeom.setAttribute('position', tempGeom.getAttribute('position'));
+                geometries.push(cleanGeom);
+            });
+        }
 
         if (geometries.length > 0) {
             const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);

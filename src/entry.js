@@ -55,6 +55,12 @@ import decalAlpha from './assets/decals/decal_a.jpg'
 //Sky
 import skyTex from './assets/sky.jpg'
 
+// Novas Texturas de Piso PBR
+import floorColor from './assets/Ground081_1K-JPG_Color.jpg'
+import floorNormal from './assets/Ground081_1K-JPG_NormalGL.jpg'
+import floorRoughness from './assets/Ground081_1K-JPG_Roughness.jpg'
+import floorAO from './assets/Ground081_1K-JPG_AmbientOcclusion.jpg'
+
 import DebugDrawer from './DebugDrawer'
 import Navmesh from './entities/Level/Navmesh'
 import AttackTrigger from './entities/NPC/AttackTrigger'
@@ -65,6 +71,7 @@ import UIManager from './entities/UI/UIManager'
 import AmmoBox from './entities/AmmoBox/AmmoBox'
 import LevelBulletDecals from './entities/Level/BulletDecals'
 import PlayerHealth from './entities/Player/PlayerHealth'
+import MissionManager from './entities/Level/MissionManager'
 
 class FPSGameApp{
 
@@ -194,6 +201,7 @@ class FPSGameApp{
 
   SetupStartButton(){
     document.getElementById('start_game').addEventListener('click', this.StartGame);
+    document.getElementById('restart_button').addEventListener('click', this.StartGame);
   }
 
   ShowMenu(visible=true){
@@ -235,6 +243,12 @@ class FPSGameApp{
     promises.push(this.AddAsset(decalAlpha, texLoader, "decalAlpha"));
 
     promises.push(this.AddAsset(skyTex, texLoader, "skyTex"));
+
+    // Carrega texturas do piso
+    promises.push(this.AddAsset(floorColor, texLoader, "floorColor"));
+    promises.push(this.AddAsset(floorNormal, texLoader, "floorNormal"));
+    promises.push(this.AddAsset(floorRoughness, texLoader, "floorRoughness"));
+    promises.push(this.AddAsset(floorAO, texLoader, "floorAO"));
 
     await this.PromiseProgress(promises, this.OnProgress);
 
@@ -280,9 +294,18 @@ class FPSGameApp{
 
     const levelEntity = new Entity();
     levelEntity.SetName('Level');
-    levelEntity.AddComponent(new LevelSetup(this.assets['level'], this.scene, this.physicsWorld));
+    
+    // Passa os mapas PBR carregados para o LevelSetup
+    const floorTextures = {
+        color: this.assets['floorColor'],
+        normal: this.assets['floorNormal'],
+        roughness: this.assets['floorRoughness'],
+        ao: this.assets['floorAO']
+    };
+    levelEntity.AddComponent(new LevelSetup(this.assets['level'], this.scene, this.physicsWorld, floorTextures));
     levelEntity.AddComponent(new Navmesh(this.scene, this.assets['navmesh']));
     levelEntity.AddComponent(new LevelBulletDecals(this.scene, this.assets['decalColor'], this.assets['decalNormal'], this.assets['decalAlpha']));
+    levelEntity.AddComponent(new MissionManager(this));
     this.entityManager.Add(levelEntity);
 
     const skyEntity = new Entity();
@@ -302,6 +325,8 @@ class FPSGameApp{
 
     const npcLocations = [
       [10.8, 0.0, 22.0],
+      [18.0, 0.0, 15.0],
+      [5.0, 0.0, 28.0],
     ];
 
     npcLocations.forEach((v,i)=>{
@@ -346,6 +371,9 @@ class FPSGameApp{
     }
     const debugDiv = document.getElementById('debug');
     if (debugDiv) debugDiv.style.display = 'none';
+
+    const resultScreen = document.getElementById('result_screen');
+    if (resultScreen) resultScreen.style.display = 'none';
 
     window.cancelAnimationFrame(this.animFrameId);
     Input.ClearEventListners();

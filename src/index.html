@@ -4,26 +4,30 @@
     <meta charset="UTF-8">
     <title><%= htmlWebpackPlugin.options.title %></title>
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39+Text&family=Orbitron:wght@400;700;900&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
       body{
         margin: 0;
         font-family: 'Roboto', sans-serif;
         color: white;
+        overflow: hidden;
+        user-select: none;
       }
       #crosshair{
         position: absolute;
         top: 50%;
         left: 50%;
-        width: 2%;
+        width: 1.5%;
         transform: translate(-50%, -50%);
+        pointer-events: none;
       }
       #ammo_container{
         position: absolute;
         right: 5%;
         bottom: 5%;
-        font-size: 3em;
+        font-size: 2.5em;
+        font-family: 'Orbitron', sans-serif;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
       }
       #progress{
         position: absolute;
@@ -39,13 +43,19 @@
         left: 5%;
         width: 18%;
         height: 2%;
-        border: 1px solid #ffffff;
+        border: 2px solid rgba(255,255,255,0.7);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
       }
       #health_progress{
         position: absolute;
-        background-color: #ffffff;
+        background: linear-gradient(90deg, #ff3b30, #ff9500);
         width: 100%;
         height: 100%;
+        transition: width 0.1s ease-out;
+        box-shadow: 0 0 8px #ff3b30;
       }
       #game_hud{
         visibility: hidden;
@@ -54,26 +64,52 @@
         position: absolute;
         width: 100%;
         height: 100%;
-        background-color: black;
+        background: radial-gradient(circle, #151a24 0%, #080a0f 100%);
         text-align: center;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         visibility: hidden;
+        z-index: 100;
       }
       h1{
-        font-family: 'Libre Barcode 39 Text', cursive;
-        font-size: 4em;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 4.5em;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        margin: 0;
+        font-weight: 900;
+        background: linear-gradient(135deg, #00d2ff, #0066ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+      }
+      #menu p {
+        font-family: 'Orbitron', sans-serif;
+        color: #8a99ad;
+        font-size: 1.2em;
+        margin-top: 15px;
+        letter-spacing: 2px;
       }
       button{
-        background-color: rgba(0,0,0,0);
-        color: rgb(221, 221, 221);
-        font-size: 1.5em;
+        background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+        color: white;
+        font-size: 1.2em;
+        font-family: 'Orbitron', sans-serif;
         border: none;
+        padding: 15px 40px;
+        border-radius: 30px;
         cursor: pointer;
-        margin-top: 10%;
+        margin-top: 40px;
         font-weight: 700;
+        box-shadow: 0 0 20px rgba(0, 102, 255, 0.4);
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+      }
+      button:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 0 30px rgba(0, 210, 255, 0.6);
       }
       #debug{
         position: absolute;
@@ -91,17 +127,134 @@
         text-align: left;
         color: #eee;
       }
+
+      /* Estilos Sci-Fi Adicionais */
+      #mission_hud {
+        position: absolute;
+        top: 5%;
+        left: 5%;
+        background: rgba(10, 15, 26, 0.8);
+        border-left: 4px solid #00d2ff;
+        padding: 15px 25px;
+        border-radius: 0 10px 10px 0;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        font-family: 'Orbitron', sans-serif;
+        pointer-events: none;
+      }
+      #mission_title {
+        font-size: 0.8em;
+        color: #8a99ad;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 5px;
+      }
+      #mission_text {
+        font-size: 1.1em;
+        color: #ffffff;
+        font-weight: 700;
+        text-shadow: 0 0 8px rgba(0, 210, 255, 0.5);
+      }
+
+      #interact_prompt {
+        position: absolute;
+        bottom: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 149, 0, 0.2);
+        border: 2px solid #ff9500;
+        color: #ffffff;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 700;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 1.2em;
+        text-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
+        box-shadow: 0 0 15px rgba(255, 149, 0, 0.3);
+        animation: pulse 1.5s infinite;
+        pointer-events: none;
+        display: none;
+      }
+
+      #notification_banner {
+        position: absolute;
+        top: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 59, 48, 0.8);
+        border: 2px solid #ff3b30;
+        color: #ffffff;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        padding: 15px 30px;
+        border-radius: 5px;
+        font-size: 1.4em;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 25px rgba(255, 59, 48, 0.5);
+        pointer-events: none;
+        display: none;
+        z-index: 99;
+      }
+
+      #result_screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 200;
+        display: none;
+        font-family: 'Orbitron', sans-serif;
+      }
+      #result_title {
+        font-size: 4em;
+        font-weight: 900;
+        margin-bottom: 10px;
+      }
+      #result_sub {
+        font-size: 1.5em;
+        color: #8a99ad;
+        margin-bottom: 30px;
+      }
+
+      @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1.0; }
+        100% { opacity: 0.6; }
+      }
     </style>
   </head>
 
   <body>
     <div id="debug"></div>
+    
+    <!-- Menu Principal -->
     <div id="menu">
-      <h1>Shooter Game Demo</h1>
-      <button id="start_game">NEW GAME</button>
+      <h1>Outbreak: Purify</h1>
+      <p>EXPANSÃO MAPA & MISSÕES COMPLETO</p>
+      <button id="start_game">INICIAR OPERAÇÃO</button>
     </div>
+
+    <!-- HUD do Jogo -->
     <div id="game_hud">
       <img id="crosshair" src="<%=require('./ui/crosshair.png')%>" />
+      
+      <!-- Missão HUD -->
+      <div id="mission_hud">
+        <div id="mission_title">Missão Operacional</div>
+        <div id="mission_text">Limpar Zona Inicial</div>
+      </div>
+
+      <!-- Prompt de Interação -->
+      <div id="interact_prompt">Pressione [E] para interagir</div>
+
+      <!-- Banner de Notificação -->
+      <div id="notification_banner">ALERTA DE HORDA!</div>
+
       <div id="ammo_container">
         <span id="current_ammo">0</span>
         <span>|</span>
@@ -111,6 +264,14 @@
         <div id="health_progress"></div>
       </div>
     </div>
+
+    <!-- Tela de Resultado (Vitória/Derrota) -->
+    <div id="result_screen">
+      <div id="result_title">MISSÃO CUMPRIDA</div>
+      <div id="result_sub">Você purificou a base com sucesso!</div>
+      <button id="restart_button">RECOMEÇAR MISSÃO</button>
+    </div>
+
     <div id="progress"></div>
     <my-app></my-app>
   </body>

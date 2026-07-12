@@ -285,6 +285,8 @@ export default class CharacterController extends Component{
 
     Update(t){
         this.mixer && this.mixer.update(t);
+        if (this.health <= 0) return;
+
         this.ApplyRootMotion();
 
         // Decrement dodge cooldown
